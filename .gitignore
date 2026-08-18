@@ -1,0 +1,15 @@
+# Build artifacts
+build/
+
+# macOS
+.DS_Store
+
+# VSCode settings (if personal)
+.vscode/
+
+# Image files
+result_images/
+test_images/
+
+# Temporary files
+tmp_code.cpp
