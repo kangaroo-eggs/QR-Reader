@@ -158,6 +158,9 @@ int kwDecoderQR::GetBitSequence(unsigned cBytePool[], int nNumBytes, int iStartB
 
     if ((nNumBitsToGet>16)||((iStartBit+nNumBitsToGet-1)>nNumBytes*8-1))
         return -1;
+    // Ensure iStartBit/8+2 is within bounds (reads 3 bytes)
+    if (iStartBit/8 + 2 >= nNumBytes)
+        return -1;
     longword = (cBytePool[iStartBit/8]<<16) + (cBytePool[iStartBit/8+1]<<8) + cBytePool[iStartBit/8+2];
     beginbitloc = 7-iStartBit%8+16;
     endbitloc = beginbitloc-nNumBitsToGet+1;
@@ -400,6 +403,8 @@ int kwDecoderQR::GetIndex(int verNum, int ECClevel)
             return Index+3;
         case 3:   //Q
             return Index+2;
+        default:
+            return -1;
     }
 }
 

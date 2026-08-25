@@ -20,7 +20,8 @@ kwMsrPoint::~kwMsrPoint() {
 void kwMsrPoint::Clear() {
     memset(edgeType, 0, kw_MAXnumOfMsrPoint * sizeof(bool));
     memset(edgeValue, 0, kw_MAXnumOfMsrPoint * sizeof(float));
-    memset(edgePts, 0, kw_MAXnumOfMsrPoint * sizeof(kwPoint));
+    for (int i = 0; i < kw_MAXnumOfMsrPoint; ++i)
+        edgePts[i] = kwPoint(0, 0);
     numOfEdgePts = 0;
     ptEnd(0, 0);
     ptStart(0, 0);
@@ -33,6 +34,9 @@ void kwMsrPoint::SetMsrBounds(kwImageU8& image, kwPoint ptMsrStart, kwPoint ptMs
     this->ptStart = ptMsrStart;
     this->ptEnd = ptMsrEnd;
     int     TotalPointNum = (int)ptStart.DistanceTo(ptEnd);  // <= start~end 實際經過的 pixel 數量 (這是可以選擇的，端看你想要多精準)
+    if (TotalPointNum < 4) {  // need at least 4 points for 1st/2nd derivative
+        return;
+    }
     float   deltaX = (ptMsrEnd.x - ptMsrStart.x) / TotalPointNum,
             deltaY = (ptMsrEnd.y - ptMsrStart.y) / TotalPointNum; // 每一次的位移
 
@@ -73,6 +77,7 @@ void kwMsrPoint::SetMsrBounds(kwImageU8& image, kwPoint ptMsrStart, kwPoint ptMs
         Derivative_2nd_now = SecondOrderDerivative(GraylevelArray, i, TotalPointNum);
         Derivative_2nd_next = SecondOrderDerivative(GraylevelArray, i + 1, TotalPointNum);
         if (Derivative_2nd_now * Derivative_2nd_next < 0 && Derivative_1st[i] > OtsuValue) {
+            if (numOfEdgePts >= kw_MAXnumOfMsrPoint) break;
             //if (Derivative_1st[i] + Derivative_1st[i + 1] > kw_Ostu_NOISE_LEVEL * (float)OtsuValue) {
                 numOfEdgePts++;
                 edgeValue[numOfEdgePts - 1] = Derivative_1st[i];
@@ -84,6 +89,7 @@ void kwMsrPoint::SetMsrBounds(kwImageU8& image, kwPoint ptMsrStart, kwPoint ptMs
                                              / (Derivative_2nd_now - Derivative_2nd_next);
             //}
         } else if (Derivative_2nd_now == 0 && Derivative_2nd_next != 0 && Derivative_1st[i] > OtsuValue) {
+            if (numOfEdgePts >= kw_MAXnumOfMsrPoint) break;
             //if (Derivative_1st[i] + Derivative_1st[i + 1] > kw_Ostu_NOISE_LEVEL * (float)OtsuValue) {
                 numOfEdgePts++;
                 edgeValue[numOfEdgePts - 1] = Derivative_1st[i];
@@ -93,6 +99,7 @@ void kwMsrPoint::SetMsrBounds(kwImageU8& image, kwPoint ptMsrStart, kwPoint ptMs
                 edgePts[numOfEdgePts - 1].y = PointArray[i].y;
             //}
         } else if (Derivative_2nd_now != 0 && Derivative_2nd_next == 0 && Derivative_1st[i + 1] > OtsuValue) {  // special case for pt[length-2] is 反曲點
+            if (numOfEdgePts >= kw_MAXnumOfMsrPoint) break;
             //if (Derivative_1st[i] + Derivative_1st[i + 1] > kw_Ostu_NOISE_LEVEL * (float)OtsuValue) {
                 numOfEdgePts++;
                 edgeValue[numOfEdgePts - 1] = Derivative_1st[i + 1];

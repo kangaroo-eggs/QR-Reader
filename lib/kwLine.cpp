@@ -17,7 +17,7 @@ kwLine::kwLine(float _T, float _R) {
 //-------------------------------------
 bool kwLine::IsVertical()
 {
-    if (slope > 50 || slope < -50)
+    if (slope > 500 || slope < -500)
         return true;
     else
         return false;
@@ -28,7 +28,11 @@ void kwLine::MB2TR()
 {
   radius = (intercept / sqrt((1 * 1 + slope * slope)));
 
-  theta = atan(-1 / slope);
+  if (slope == 0) {
+    theta = kw_Pi / 2;
+  } else {
+    theta = atan(-1 / slope);
+  }
   if (radius < 0) {
     radius = -radius;
     theta = -theta;
@@ -38,19 +42,20 @@ void kwLine::MB2TR()
 //-------------------------------------
 void kwLine::TR2MB()
 {
-  slope = -1 / tan(theta);
-  intercept = radius / sin(theta);
+  float sinT = sin(theta);
+  if (sinT == 0) {
+    slope = kw_FMAX;
+    intercept = kw_FMAX;
+  } else {
+    slope = -1 / tan(theta);
+    intercept = radius / sinT;
+  }
 }
 
 //-------------------------------------
 void kwLine::Set(kwPoint p1, kwPoint p2)
 {
-    if (p2.x == 0 && p1.x == 0) {
-        slope = kw_FMAX;
-        intercept = kw_FMAX;
-        theta = 0;
-        radius = 0;
-    } else if (p2.x == p1.x) {
+    if (p2.x == p1.x) {
         slope = kw_FMAX;
         intercept = kw_FMAX;
         theta = (p1.x > 0) ? 0 : kw_Pi;

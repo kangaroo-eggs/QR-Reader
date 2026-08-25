@@ -113,7 +113,6 @@ kwPoint kwPoint::MidPoint(kwPoint &operand) const{
 float kwPoint::DistanceTo(kwPoint ptPoint) {
   float ans;
   ans = (this->x - ptPoint.x) * (this->x - ptPoint.x) + (this->y - ptPoint.y) * (this->y - ptPoint.y);
-  if (ans < 0) ans = -ans;
   ans = sqrt(ans);
   return ans;
 }
@@ -130,7 +129,10 @@ void kwPoint::Swap(kwPoint &srcPoint) {
 kwPoint kwPoint::Project(kwPoint &that) {
     float scalar;
     kwPoint ans;
-    scalar = (*this * that) / (that.Norm2() * that.Norm2());
+    float norm2 = that.Norm2();
+    if (norm2 == 0)
+        return kwPoint(0, 0);
+    scalar = (*this * that) / (norm2 * norm2);
     ans = (that * scalar);
     return ans;
 }
@@ -281,9 +283,10 @@ kwPointPair kwPointPair::operator-(kwPoint TranslateVector) {
 
 //-------------------------------------
 kwPointPair kwPointPair::operator*(float scale) {
-  p1 = p1 * scale;
-  p2 = p2 * scale;
-  return (*this);
+  kwPointPair temp;
+  temp.p1 = this->p1 * scale;
+  temp.p2 = this->p2 * scale;
+  return temp;
 }
 
 //-------------------------------------
@@ -310,7 +313,10 @@ float kwPointPair::operator||(kwPointPair operand2) {
 kwPoint kwPointPair::operator~() {
   kwPoint vector;
   vector = this->MakeVector();
-  vector / (vector.Norm2());
+  float norm2 = vector.Norm2();
+  if (norm2 == 0)
+    return kwPoint(0, 0);
+  vector = vector / (norm2);
   return vector;
 }
 
@@ -320,7 +326,10 @@ float kwPointPair::operator^(kwPointPair operand2) {
     float ans;
     vectorA = this->MakeVector();
     vectorB = operand2.MakeVector();
-    ans = (vectorA * vectorB) / (vectorA.Norm2() * vectorB.Norm2());
+    float denom = vectorA.Norm2() * vectorB.Norm2();
+    if (denom == 0)
+        return 0;
+    ans = (vectorA * vectorB) / denom;
     return ans;
 }
 
@@ -340,7 +349,7 @@ float kwPointPair::EvaluateAtX(float Xvalue) {
         float ans, m, n;
         m = Xvalue - p1.x;
         n = p2.x - Xvalue;
-        ans = (n * p1.x + m * p2.y) / (m + n);
+        ans = (n * p1.y + m * p2.y) / (m + n);
         return ans;
     }
 }

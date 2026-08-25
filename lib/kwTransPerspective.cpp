@@ -61,6 +61,10 @@ kwMatrix kwTransPerspective::Calibrate( const kwPoint World[], const kwPoint Cam
     if(nNum == 4){
         kwMatrix ExactSol, inverse;
         inverse = (!A);
+        if (inverse.IsZero()) {
+            // Singular matrix — points are degenerate (collinear or duplicate)
+            return kwMatrix(3, 3);
+        }
         ExactSol = inverse * vec_camera;
         sol = ExactSol;
         cout << "4 point Calibrate" << endl;
@@ -68,7 +72,13 @@ kwMatrix kwTransPerspective::Calibrate( const kwPoint World[], const kwPoint Cam
     if(nNum > 4){
         kwMatrix A_T, LeastSqrSol;
         A_T = A.Transpose();
-        LeastSqrSol = (!(A_T * A)) * A_T * vec_camera;
+        kwMatrix A_T_A = A_T * A;
+        kwMatrix inv = !A_T_A;
+        if (inv.IsZero()) {
+            // Singular matrix — points are degenerate
+            return kwMatrix(3, 3);
+        }
+        LeastSqrSol = inv * A_T * vec_camera;
         sol = LeastSqrSol;
     }
     m_00 = perTransMat.elematrix[0][0] = sol.membase[0];

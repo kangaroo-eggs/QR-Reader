@@ -85,7 +85,7 @@ int CxDecoderGRS_QR::Decode( int nLenCodewords, int nLenDatawords )
     //============================================================
     int Eval, iPos=0;
 
-    for ( unsigned aa=1; aa <= 255; ++aa )
+    for ( unsigned aa=1; aa <= 255 && iPos < MAX_NUM_ERRORS; ++aa )
     {
         Eval=0;
         for ( unsigned i=0; i <= (unsigned)(nLenECCwords/2); ++i )

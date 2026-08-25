@@ -14,7 +14,7 @@
 int gNumPointFrame = 2;
 kwFrame *gpPointFrame;
 
-int main()
+int main(int argc, char* argv[])
 {
     cout << "Hello CV!" << endl;
 
@@ -22,14 +22,20 @@ int main()
     gpPointFrame = new kwFrame[gNumPointFrame];
 
     cv::Mat matColor, matGray;
-    // try relative test image first
-    matColor = cv::imread("TestImage/QR/V5_H.png");
+    // image path: CLI arg > default test image
+    const char* imgPath = (argc > 1) ? argv[1] : "test_images/QR/V5_H.png";
+    matColor = cv::imread(imgPath);
     if(matColor.empty()){
         // fallback: try webcam
         cv::VideoCapture vcCam(0);
         if(vcCam.isOpened()){
             vcCam >> matColor;
         }
+    }
+    if(matColor.empty()){
+        cout << "ERROR: no image loaded from '" << imgPath << "' and webcam failed." << endl;
+        delete[] gpPointFrame;
+        return 1;
     }
 //    cv::imshow("Original Image", matColor);
 //    cv::imwrite("D:/summer_project/QR/result_image/color.png", matColor);

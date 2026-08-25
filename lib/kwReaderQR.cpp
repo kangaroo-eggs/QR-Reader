@@ -57,6 +57,7 @@ int kwReaderQR::DoReading(kwImageU8 &imImage, unsigned char DecodedText[]) {
 
     for (int i = 1; i <= iterTimes; ++i)
     {
+        if (tmpSet == nullptr) break;
         if ((this->symbolVersion = this->GetVersionInfo(imImage, tmpSet->nodeContent)) != 0) {
             if (this->GetFormatInfo(imImage, tmpSet->nodeContent) == true) {
                 if (this->DecodingEyeSets(imImage, tmpSet->nodeContent, DecodedText) == 1)
@@ -70,9 +71,10 @@ int kwReaderQR::DoReading(kwImageU8 &imImage, unsigned char DecodedText[]) {
                 }
             }
         }
-        tmpSet = tmpSet->prev;
-        eyeSetCandidate.RemoveNode(tmpSet->next);
-        tmpSet = tmpSet->next;
+        // save next pointer BEFORE removing current node
+        kwNode<kwReaderQR_EyeSet>* nextSet = tmpSet->next;
+        eyeSetCandidate.RemoveNode(tmpSet);
+        tmpSet = nextSet;
     }
     cout << "new eyeSetCandidate: " << eyeSetCandidate.numOfListItems << endl;
     return found;
@@ -82,11 +84,12 @@ int kwReaderQR::DoReading(kwImageU8 &imImage, unsigned char DecodedText[]) {
 void kwReaderQR::LineScanning_FindPatternEyes(kwImageU8 &imImage, kwPoint ptBegin, kwPoint ptEnd,
                                               float bias, kwList<kwPointPairNode> &ptplEyetwobounded)
 {
-    float ptBoundDistance[500], EyeWidth;   //最多可測 501 條邊之間的距離
+    float* ptBoundDistance = nullptr, EyeWidth;
     pointMsrTool.SetMsrBounds(imImage, ptBegin, ptEnd);
 //    cout << pointMsrTool.numOfEdgePts << endl;
     if (pointMsrTool.numOfEdgePts >= 6)
     {
+        ptBoundDistance = new float[pointMsrTool.numOfEdgePts - 1];
         for (int i = 0; i < pointMsrTool.numOfEdgePts - 1; ++i)
             ptBoundDistance[i] = pointMsrTool.edgePts[i].DistanceTo(pointMsrTool.edgePts[i + 1]);
 
@@ -105,7 +108,7 @@ void kwReaderQR::LineScanning_FindPatternEyes(kwImageU8 &imImage, kwPoint ptBegi
                 // 左右符合的話，從上到下再測一次
                 kwMsrPoint measureLine_2;
                 kwPoint ptStart2, ptEnd2;
-                float ptBoundDistance2[500];
+                float* ptBoundDistance2 = nullptr;
                 float EyeWidth2 = 0;
 
                 // find center pt, up & down 之所以要多1, 是因為 SetMsrBounds 不一定能包含端點
@@ -116,29 +119,36 @@ void kwReaderQR::LineScanning_FindPatternEyes(kwImageU8 &imImage, kwPoint ptBegi
                 ptEnd2( centerx, centeryDown );
                 measureLine_2.SetMsrBounds( imImage, ptStart2, ptEnd2);
 
-                for (int j = 0; j < measureLine_2.numOfEdgePts - 1; ++j)
-                  ptBoundDistance2[j] = measureLine_2.edgePts[j].DistanceTo(measureLine_2.edgePts[j + 1]);
+                if (measureLine_2.numOfEdgePts >= 2) {
+                    ptBoundDistance2 = new float[measureLine_2.numOfEdgePts - 1];
+                    for (int j = 0; j < measureLine_2.numOfEdgePts - 1; ++j)
+                      ptBoundDistance2[j] = measureLine_2.edgePts[j].DistanceTo(measureLine_2.edgePts[j + 1]);
+                }
 
-                for (int j = 0; j < measureLine_2.numOfEdgePts - 5; j++)
-                {
-                    EyeWidth2 = measureLine_2.edgePts[j + 5].y - measureLine_2.edgePts[j].y;
-                    float tolerantRange2[2] = { EyeWidth2 * (1 - bias), EyeWidth2 * (1 + bias) };
-                    if (tolerantRange2[0] <= 7 * ptBoundDistance2[j] && 7 * ptBoundDistance2[j] <= tolerantRange2[1] &&
-                        tolerantRange2[0] <= 7 * ptBoundDistance2[j + 1] && 7 * ptBoundDistance2[j + 1] <= tolerantRange2[1] &&
-                        3 * tolerantRange2[0] <= 7 * ptBoundDistance2[j + 2] && 7 * ptBoundDistance2[j + 2] <= 3 * tolerantRange2[1] &&
-                        tolerantRange2[0] <= 7 * ptBoundDistance2[j + 3] && 7 * ptBoundDistance2[j + 3] <= tolerantRange2[1] &&
-                        tolerantRange2[0] <= 7 * ptBoundDistance2[j + 4] && 7 * ptBoundDistance2[j + 4] <= tolerantRange2[1])
+                if (ptBoundDistance2 != nullptr) {
+                    for (int j = 0; j < measureLine_2.numOfEdgePts - 5; j++)
                     {
-                        // Eye's candidate
-                        kwNode<kwPointPairNode> Eye;
-                        Eye.nodeContent.p1(measureLine_2.edgePts[j].x, measureLine_2.edgePts[j].y);
-                        Eye.nodeContent.p2(measureLine_2.edgePts[j].x, measureLine_2.edgePts[j + 5].y);
+                        EyeWidth2 = measureLine_2.edgePts[j + 5].y - measureLine_2.edgePts[j].y;
+                        float tolerantRange2[2] = { EyeWidth2 * (1 - bias), EyeWidth2 * (1 + bias) };
+                        if (tolerantRange2[0] <= 7 * ptBoundDistance2[j] && 7 * ptBoundDistance2[j] <= tolerantRange2[1] &&
+                            tolerantRange2[0] <= 7 * ptBoundDistance2[j + 1] && 7 * ptBoundDistance2[j + 1] <= tolerantRange2[1] &&
+                            3 * tolerantRange2[0] <= 7 * ptBoundDistance2[j + 2] && 7 * ptBoundDistance2[j + 2] <= 3 * tolerantRange2[1] &&
+                            tolerantRange2[0] <= 7 * ptBoundDistance2[j + 3] && 7 * ptBoundDistance2[j + 3] <= tolerantRange2[1] &&
+                            tolerantRange2[0] <= 7 * ptBoundDistance2[j + 4] && 7 * ptBoundDistance2[j + 4] <= tolerantRange2[1])
+                        {
+                            // Eye's candidate
+                            kwNode<kwPointPairNode> Eye;
+                            Eye.nodeContent.p1(measureLine_2.edgePts[j].x, measureLine_2.edgePts[j].y);
+                            Eye.nodeContent.p2(measureLine_2.edgePts[j].x, measureLine_2.edgePts[j + 5].y);
 //                        cout << Eye.nodeContent.p1.x << ", " << Eye.nodeContent.p1.y << endl;
-                        ptplEyetwobounded.InsertNode(&Eye);
+                            ptplEyetwobounded.InsertNode(&Eye);
+                        }
                     }
+                    delete[] ptBoundDistance2;
                 }
             }
         }
+        delete[] ptBoundDistance;
     }
 }
 
@@ -150,7 +160,7 @@ void kwReaderQR::PreparingEyeSets_AllEyes(kwImageU8 imImage, kwList<kwReaderQR_E
     float cosTheta;
 
     // filter the repeated Eyes
-    int filterIndex[EyeCandidates.numOfListItems+1];
+    int* filterIndex = new int[EyeCandidates.numOfListItems + 1];
     kwList<kwReaderQR_Eye> temp_realEye;
 
     for (int i = 0; i <= EyeCandidates.numOfListItems; ++i) // initialize
@@ -212,7 +222,10 @@ void kwReaderQR::PreparingEyeSets_AllEyes(kwImageU8 imImage, kwList<kwReaderQR_E
                     ptpEyeVector.p2(EyeCandidates(i)->nodeContent.ptCenter.x - EyeCandidates(k)->nodeContent.ptCenter.x,
                                         EyeCandidates(i)->nodeContent.ptCenter.y - EyeCandidates(k)->nodeContent.ptCenter.y);
 
-                    cosTheta = (ptpEyeVector.p2 * ptpEyeVector.p1) / (ptpEyeVector.p2.Norm2() * ptpEyeVector.p1.Norm2());
+                    float cosDenom = ptpEyeVector.p2.Norm2() * ptpEyeVector.p1.Norm2();
+                    if (cosDenom == 0)
+                        continue;
+                    cosTheta = (ptpEyeVector.p2 * ptpEyeVector.p1) / cosDenom;
 
                     if (cosTheta < cos15 && cosTheta > -cos15 && (ptpEyeVector.p2 || ptpEyeVector.p1) < 0)  // det < 0 => clockwise
                     {
@@ -227,6 +240,7 @@ void kwReaderQR::PreparingEyeSets_AllEyes(kwImageU8 imImage, kwList<kwReaderQR_E
             }
         }
     }
+    delete[] filterIndex;
 }
 
 
@@ -428,7 +442,7 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
 //    cv::destroyWindow("debugger");
 // ******************************
 
-    float graylevel_augmented[(QR_size+2) * (QR_size+2)];   // 為啥不用 pointer?
+    float* graylevel_augmented = new float[(QR_size+2) * (QR_size+2)];
 
     // put the calculated pixel value into graylevel_augment, since the value of coord_camera might not be the integer
     kwImageTools::ResampleSubpixel(imImage, coord_camera, graylevel_augmented, (QR_size+2) * (QR_size+2), kwImageTools::SubPixel_Method_InverseDistanceWeighting);
@@ -473,7 +487,8 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
 //    cv::destroyWindow("subtracted_QRImage");
 // ******************************
     int  maxNumofCodeword = (int)(subtract_QR.numOfPixels/8), numofTotalBlocks = 0, index = 0, flag = 0;
-    kwPixel DecodeDataBefore[maxNumofCodeword], DecodeDataAfter[maxNumofCodeword];
+    kwPixel* DecodeDataBefore = new kwPixel[maxNumofCodeword];
+    kwPixel* DecodeDataAfter = new kwPixel[maxNumofCodeword];
     kwPixel **separatedData;
 
     // unmask
@@ -495,10 +510,12 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
 
     for(int j = 0; j < maxiter; ++j){
         for (int i = 0; i < numofTotalBlocks; ++i){
-            if( i > Ecc_S_c[index] && j <  Ecc_S_numofBlocks[index] )
-                continue;
-            separatedData[i][j] = DecodeDataBefore[k];
-            k++;
+                // 若屬於短區塊 (i < Ecc_S_numofBlocks)，且目前碼字索引已經超過短區塊容量 (j >= Ecc_S_c)
+                if( i < Ecc_S_numofBlocks[index] && j >= Ecc_S_c[index] )
+                    continue; // 跳過短區塊，因為短區塊沒有第 j 個碼字
+
+                separatedData[i][j] = DecodeDataBefore[k];
+                k++;
         }
     }
 
@@ -510,8 +527,11 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
     // Get Decoded text, only need to send data
     if ( flag )
     {
-        this->decoderQR.UncompressText(DecodeDataAfter, maxNumofCodeword, 5, DecodedText);
+        this->decoderQR.UncompressText(DecodeDataAfter, numofTotalWords, this->symbolVersion, DecodedText);
 //        this->decoderQR.DecodeText(DecodeDataAfter, DecodedText, this->symbolVersion, this->symbolECCLevel);
+        delete[] graylevel_augmented;
+        delete[] DecodeDataBefore;
+        delete[] DecodeDataAfter;
         delete[] coord_augmented_world;
         delete[] coord_camera;
         for (int i = 0; i < numofTotalBlocks; ++i)
@@ -520,6 +540,9 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
         return 1;
     }
     else {
+        delete[] graylevel_augmented;
+        delete[] DecodeDataBefore;
+        delete[] DecodeDataAfter;
         delete[] coord_augmented_world;
         delete[] coord_camera;
         for (int i = 0; i < numofTotalBlocks; ++i)
@@ -563,7 +586,7 @@ kwPoint kwReaderQR::Get4thCalibrateEye(kwImageU8& imImage, kwReaderQR_EyeSet& fs
       ptCalibrate2 += this->unitModuleVectorH.Project(Eye2_Calibrate_Vector) * 10;
 
       QRMsr.SetMsrBounds(imImage, ptCalibrate1, ptCalibrate2);
-      if (QRMsr.numOfEdgePts < 0) {
+      if (QRMsr.numOfEdgePts < 2) {
         return Eye4;
       }
       for (int i = 0; i < QRMsr.numOfEdgePts - 1; ++i) {
@@ -609,7 +632,7 @@ kwPoint kwReaderQR::Get4thCalibrateEye(kwImageU8& imImage, kwReaderQR_EyeSet& fs
       ptCalibrate2 += this->unitModuleVectorV.Project(Eye1_Calibrate_Vector) * 10;
 
       QRMsr.SetMsrBounds(imImage, ptCalibrate1, ptCalibrate2);
-      if (QRMsr.numOfEdgePts < 0) {
+      if (QRMsr.numOfEdgePts < 2) {
         return Eye4;
       }
       for (int i = 0; i < QRMsr.numOfEdgePts - 1; ++i) {

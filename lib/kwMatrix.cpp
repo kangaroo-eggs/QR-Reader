@@ -66,7 +66,7 @@ bool kwMatrix::IsNull()
 //-------------------------------------------------
 bool kwMatrix::IsZero()
 {
-    for ( float* data = this->membase; data < this->memend; ++data ){
+    for ( float* data = this->membase; data <= this->memend; ++data ){
         if( *data != 0)
             return false;
     }
@@ -412,17 +412,17 @@ kwMatrix kwMatrix::operator!() const
     for (int r = 0; r < GaussMatrix.rows; ++r) {
         RowIndex = r;
         while (GaussMatrix.elematrix[RowIndex][r] == 0) {
+            // final row all=0, no pivot found
+            if (RowIndex == GaussMatrix.rows - 1){
+                cout << "there exist one row is zero, return a Null matrix" << endl;
+                return NotInverMatrix;
+            }
             RowIndex++;
             // switch row
             if (GaussMatrix.elematrix[RowIndex][r] != 0) {
                 GaussMatrix.Type1_RowOperation(r, RowIndex);
                 Identity.Type1_RowOperation(r, RowIndex);
                 break;
-            }
-            // final row all=0
-            if (RowIndex == GaussMatrix.rows - 1){
-                cout << "there exist one row is zero, return a Null matrix" << endl;
-                return NotInverMatrix;
             }
         }
 
@@ -523,22 +523,22 @@ kwMatrix kwMatrix::Row_Echlon_Form()
     for (int r = 0; r < row_echlon.rows; ++r) {
       RowIndex = r;
       while (row_echlon.elematrix[RowIndex][r] == 0) {
-        RowIndex++;
         if (RowIndex == this->rows - 1){    // final row all=0
             cout << "there exist one row is zero, return a Null matrix" << endl;
             row_echlon.Clear();
             return row_echlon;
         }
+        RowIndex++;
         // switch row
         if (row_echlon.elematrix[RowIndex][r] != 0) {
           row_echlon.Type1_RowOperation(r, RowIndex);
           break;
         }
-        // eliminate pivot
-        for (int i = r + 1; i < rows; ++i) {
-          Type3Mult = -row_echlon.elematrix[i][r]/row_echlon.elematrix[r][r];
-          row_echlon.Type3_RowOperation(r, Type3Mult, i);
-        }
+      }
+      // eliminate pivot (outside while loop)
+      for (int i = r + 1; i < rows; ++i) {
+        Type3Mult = -row_echlon.elematrix[i][r]/row_echlon.elematrix[r][r];
+        row_echlon.Type3_RowOperation(r, Type3Mult, i);
       }
     }
 

@@ -103,10 +103,8 @@ kwImageU8& kwImageU8::operator=(const kwImageU8& imCopyFrom)
             this->numOfPixels = imCopyFrom.numOfPixels;
             this->membase = new kwPixel[this->numOfPixels];
             this->memend = this->membase + this->numOfPixels - 1;
-            if( this->rows != imCopyFrom.rows ){
-                delete [] this->imgElement;
-                this->imgElement = new kwPixel*[rows];
-            }
+            delete [] this->imgElement;
+            this->imgElement = new kwPixel*[imCopyFrom.rows];
             this->cols = imCopyFrom.cols, this->rows = imCopyFrom.rows;
 
             kwPixel* ptr = this->membase;
@@ -164,7 +162,7 @@ kwImageU8 kwImageU8::operator*(const float fmult)
 //-------------------------------------////
 kwImageU8 kwImageU8::operator!()
 {
-    kwImageU8 imResult( this->cols, this->rows, false );
+    kwImageU8 imResult(  this->rows, this->cols, false );
     kwPixel* pSrc = this->membase;
     kwPixel* pDst = imResult.membase;
     for ( ; pSrc <= this->memend; )

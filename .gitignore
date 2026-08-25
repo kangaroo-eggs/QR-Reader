@@ -7,9 +7,14 @@ build/
 # VSCode settings (if personal)
 .vscode/
 
-# Image files
+# Generated debug images only (NOT test_images/ — those are needed to run)
 result_images/
-test_images/
 
 # Temporary files
 tmp_code.cpp
+
+# CMake artifacts (safety net if configured at root)
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake

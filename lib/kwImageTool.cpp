@@ -21,7 +21,7 @@ float kwImageTools::SubPixel_Method_NearestNeighbor(kwImageU8& img, kwPoint pt){
         upcoord = img.rows-2;
 
     int x, y;
-    float midx = leftcoord+0.5, midy = leftcoord+0.5;
+    float midx = leftcoord+0.5, midy = upcoord+0.5;
     // 看點靠左還是靠右
     if(pt.x < midx)
         x = leftcoord;
@@ -67,17 +67,21 @@ float kwImageTools::SubPixel_Method_InverseDistanceWeighting(kwImageU8& img, kwP
     kwPoint pt1(leftcoord, upcoord), pt2(leftcoord+1, upcoord), pt3(leftcoord+1, upcoord+1), pt4(leftcoord, upcoord+1);
     float dist1, dist2, dist3, dist4, subpixelvalue;
 
-    dist1 = 1 / pt.DistanceTo(pt1);
-    dist2 = 1 / pt.DistanceTo(pt2);
-    dist3 = 1 / pt.DistanceTo(pt3);
-    dist4 = 1 / pt.DistanceTo(pt4);
+    float d1 = pt.DistanceTo(pt1), d2 = pt.DistanceTo(pt2), d3 = pt.DistanceTo(pt3), d4 = pt.DistanceTo(pt4);
+    dist1 = (d1 > 1e-6f) ? 1.0f / d1 : 0.0f;
+    dist2 = (d2 > 1e-6f) ? 1.0f / d2 : 0.0f;
+    dist3 = (d3 > 1e-6f) ? 1.0f / d3 : 0.0f;
+    dist4 = (d4 > 1e-6f) ? 1.0f / d4 : 0.0f;
 
     // 加權算出 pixel value
     subpixelvalue = dist1 * img.imgElement[(int)pt1.y][(int)pt1.x] +
                dist2 * img.imgElement[(int)pt2.y][(int)pt2.x] +
                dist3 * img.imgElement[(int)pt3.y][(int)pt3.x] +
                dist4 * img.imgElement[(int)pt4.y][(int)pt4.x];
-    subpixelvalue /= (dist1 + dist2 + dist3 + dist4);
+    float weightSum = dist1 + dist2 + dist3 + dist4;
+    if (weightSum == 0)
+        return (float)img.imgElement[upcoord][leftcoord];
+    subpixelvalue /= weightSum;
     // cout << "value:" << subpixel << endl;
     return subpixelvalue;
 }
@@ -85,7 +89,7 @@ float kwImageTools::SubPixel_Method_InverseDistanceWeighting(kwImageU8& img, kwP
 
 //-------------------------------------
 void kwImageTools::Histogram(kwImageU8& Source, int nHistogram[]) {
-    memset(nHistogram, 0, Source.cols * Source.rows);
+    memset(nHistogram, 0, 256 * sizeof(int));
     for (int i = 0; i < Source.rows; ++i) {
         for (int j = 0; j < Source.cols; ++j) {
             nHistogram[(int)Source.imgElement[i][j]]++;
@@ -192,7 +196,7 @@ kwPixel kwImageTools::Threshold2Otsu(kwPixel ImageData[], int Length) {
 
 //-------------------------------------
 kwPixel kwImageTools::Threshold2Otsu(float floatData[], int Length) {
-    kwPixel Data[Length];
+    kwPixel* Data = new kwPixel[Length];
     float temp;
     // 轉換型別
     for (int i = 0; i < Length; i++) {
@@ -200,6 +204,7 @@ kwPixel kwImageTools::Threshold2Otsu(float floatData[], int Length) {
         Data[i] = (temp < 255) ? (kwPixel)temp : (unsigned char)255;
     }
     kwPixel OtsuValue = kwImageTools::Threshold2Otsu(Data, Length);
+    delete[] Data;
     return OtsuValue;
 }
 
