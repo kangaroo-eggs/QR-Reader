@@ -1,4 +1,5 @@
 #include "kwDecoderQR.h"
+#include <cstdlib>
 
 //-------------------------------------
 void kwDecoderQR::UnMask(kwImageU8 source, int maskNum, int verNum, kwImageU8 &unmasked_result)
@@ -69,11 +70,33 @@ void kwDecoderQR::UnMask(kwImageU8 source, int maskNum, int verNum, kwImageU8 &u
     for (int i = 0; i < qrsize; ++i)
         source.imgElement[i][6] = 'F';
 
-    // Alignment
-    if (verNum == 2 || verNum == 3 || verNum == 4 || verNum == 5 || verNum == 6) {
-        for (int i = 0; i < 5; ++i)
-          for (int j = 0; j < 5; ++j)
-            source.imgElement[qrsize-1 - 4 - i][qrsize-1 - 4 - j] = 'F';
+    // Version information (BCH, 18 cells x 2 blocks) - present only for version >= 7
+    if (verNum >= 7) {
+        // top-right block: rows 0-5, cols (qrsize-11)..(qrsize-9), 3 modules wide
+        for (int r = 0; r < 6; ++r)
+            for (int c = 0; c < 3; ++c)
+                source.imgElement[r][qrsize-11+c] = 'F';
+        // bottom-left block: rows (qrsize-11)..(qrsize-9), cols 0-5, 3 modules tall
+        for (int r = 0; r < 3; ++r)
+            for (int c = 0; c < 6; ++c)
+                source.imgElement[qrsize-11+r][c] = 'F';
+    }
+
+    // Alignment patterns: all centers per ISO Table 8 (skip the 3 corners overlapping finder patterns)
+    if (verNum >= 2) {
+        for (int i = 0; Ecc_AlignPos[verNum-1][i] != 0; ++i)
+            for (int j = 0; Ecc_AlignPos[verNum-1][j] != 0; ++j) {
+                int ai = Ecc_AlignPos[verNum-1][i], aj = Ecc_AlignPos[verNum-1][j];
+                bool skip = 0;
+                skip = skip || (ai <= 8 && aj <= 8);
+                skip = skip || (ai <= 8 && aj >= qrsize - 9);
+                skip = skip || (ai >= qrsize - 9 && aj <= 8);
+                if (skip) continue;
+                // mark the whole 5x5 block so the Z-path skips all its modules
+                for (int di = -2; di <= 2; ++di)
+                    for (int dj = -2; dj <= 2; ++dj)
+                        source.imgElement[ai + di][aj + dj] = 'F';
+            }
     }
     unmasked_result = source;
     return;
