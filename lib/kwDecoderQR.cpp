@@ -111,7 +111,7 @@ void kwDecoderQR::GetCodeword(kwImageU8 source, int verNum, int ECClevel, kwPixe
     kwPointInt passed(source.rows - 1, source.cols - 1);
 
     int index = GetIndex( verNum, ECClevel );
-    numofTotalWords = Ecc_S_c[index]*Ecc_S_numofBlocks[index] + Ecc_L_k[index]*Ecc_L_numofBlocks[index];
+    numofTotalWords = Ecc_S_c[index]*Ecc_S_numofBlocks[index] + Ecc_L_c[index]*Ecc_L_numofBlocks[index];
 
     virticalNow = UP;
     nextLR = LEFT;
@@ -165,12 +165,11 @@ void kwDecoderQR::Solve_Interleaving(int verNum, int ECClevel, kwPixel codeWordB
 }
 
 //-------------------------------------
-int kwDecoderQR::GetDecodeData(int verNum, int ECClevel, kwPixel decodedDataBefore[], kwPixel decodedDataAfter[])
+int kwDecoderQR::GetDecodeData(int blockC, int blockK, kwPixel decodedDataBefore[], kwPixel decodedDataAfter[])
 {
     CxDecoderGRS_QR RScode;
     RScode.SetInputOutput(decodedDataBefore, decodedDataAfter);
-    int index = GetIndex( verNum, ECClevel );
-    return RScode.Decode(Ecc_S_c[index], Ecc_S_k[index]+Ecc_p[index]);
+    return RScode.Decode(blockC, blockK);
 }
 
 //-------------------------------------
