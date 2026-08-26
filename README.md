@@ -13,14 +13,14 @@ A pure C++ QR code reader & decoder. Builds with CMake + OpenCV — no Qt/qmake 
 - 15-point perspective calibration → deskewed sampling
 - Local Otsu binarization per module
 - Unmasking, codeword extraction (Z-path), Reed–Solomon correction over GF(256)
-- CLI: pass any image path, or falls back to the webcam
+- CLI: two input modes — image file (default) or live camera (`-c / -d <idx>`)
 
 ## Project Structure
 
 ```
 QR_project/
 ├── CMakeLists.txt        # CMake build (OpenCV auto-detect)
-├── main.cpp              # CLI entry: image → gray → kwReaderQR::DoReading
+├── main.cpp              # CLI entry: image file (default) or live camera → gray → kwReaderQR::DoReading
 ├── lib/                  # Core reader + decoder sources
 ├── test_images/          # Sample QR images (QR/, perspective/, edge/)
 └── result_images/        # Debug output images
@@ -59,27 +59,33 @@ cmake -S . -B build
 
 ## Usage
 
-```bash
-# Default test image
-./build/qr
+Two input modes: **image file** (default) and **live camera**.
 
+```bash
 # Decode a specific image
 ./build/qr test_images/QR/V5.png
+
+# Live camera (device 0), with preview window — press 'q' or ESC to quit
+./build/qr -c
+
+# A different camera device, no preview window (Ctrl-C to quit)
+./build/qr -d 1 -n
 ```
 
-Example output:
+| Option | Meaning |
+|---|---|
+| `image` | Positional argument: image file to decode (default: `test_images/QR/V5_H.png`) |
+| `-c`, `--camera` | Camera mode, default device (0) |
+| `-d`, `--device <idx>` | Camera device index; implies `-c` |
+| `-n`, `--no-window` | Camera mode without the preview window |
+| `-h`, `--help` | Show usage |
+
+Camera mode decodes every frame and prints each newly detected code:
 
 ```
-Hello CV!
-lineCandidate: 16
-...
-Version : 5
-Mask : 4
-Ecc : 1
-Hello World
+Camera mode (device 0). Scanning... press 'q' or ESC to quit.
+DECODED: Hello World
 ```
-
-If no image argument is given and the default file is missing, the program falls back to the webcam.
 
 ## Decoding Pipeline
 
