@@ -499,35 +499,50 @@ int kwReaderQR::DecodingEyeSets(kwImageU8 &imImage, kwReaderQR_EyeSet &EyeSet,
 
 
     // unInterleaving
+    // ISO 18004 Table 9: S = shorter block group, L = longer group (0 if single);
+    // the module stream is the DATA codewords interleaved row-major, followed
+    // by the ECC codewords interleaved row-major (reference-encoder layout).
     index = decoderQR.GetIndex( this->symbolVersion, this->symbolECCLevel );
-    numofTotalBlocks = Ecc_S_numofBlocks[index] + Ecc_L_numofBlocks[index];
-    separatedData = new kwPixel*[numofTotalBlocks];
+    int nS = Ecc_S_numofBlocks[index], cS = Ecc_S_c[index], kS = Ecc_S_k[index];
+    int nL = Ecc_L_numofBlocks[index], cL = Ecc_L_c[index], kL = Ecc_L_k[index];
+    int numBlocks = nS + nL;
+    numofTotalBlocks = numBlocks;
+    separatedData = new kwPixel*[numBlocks];
+    for (int i = 0; i < numBlocks; ++i)
+        separatedData[i] = new kwPixel[(cL > cS) ? cL : cS];
 
-    for(int i = 0; i < numofTotalBlocks; ++i)
-        separatedData[i] = new kwPixel[Ecc_S_c[index]];
-
-    int maxiter = max(Ecc_S_c[index], Ecc_L_c[index]), k = 0, numofTotalWords = Ecc_S_c[index]*Ecc_S_numofBlocks[index] + Ecc_L_k[index]*Ecc_L_numofBlocks[index];
-
-    for(int j = 0; j < maxiter; ++j){
-        for (int i = 0; i < numofTotalBlocks; ++i){
-                // 若屬於短區塊 (i < Ecc_S_numofBlocks)，且目前碼字索引已經超過短區塊容量 (j >= Ecc_S_c)
-                if( i < Ecc_S_numofBlocks[index] && j >= Ecc_S_c[index] )
-                    continue; // 跳過短區塊，因為短區塊沒有第 j 個碼字
-
-                separatedData[i][j] = DecodeDataBefore[k];
-                k++;
-        }
+    {
+        int k = 0, maxK = (kL > kS) ? kL : kS;
+        int eS = cS - kS, eL = cL - kL, maxE = (eL > eS) ? eL : eS;
+        for (int p = 0; p < maxK; ++p)
+            for (int i = 0; i < numBlocks; ++i) {
+                int kBlock = (i < nS) ? kS : kL;
+                if (p < kBlock)
+                    separatedData[i][p] = DecodeDataBefore[k++];
+            }
+        for (int p = 0; p < maxE; ++p)
+            for (int i = 0; i < numBlocks; ++i) {
+                int kBlock = (i < nS) ? kS : kL;
+                int eBlock = (i < nS) ? eS : eL;
+                if (p < eBlock)
+                    separatedData[i][kBlock + p] = DecodeDataBefore[k++];
+            }
     }
 
-    // Reed-Solomon Error Correcting
-    for (int i = 0; i < numofTotalBlocks; ++i){ // block by block correcting
-        flag = this->decoderQR.GetDecodeData( this->symbolVersion, this->symbolECCLevel, separatedData[i], DecodeDataAfter );
+    // Reed-Solomon Error Correcting, block by block; data codewords concatenated in order
+    int totalDataWords = 0;
+    flag = 1;
+    for (int i = 0; i < numBlocks && flag; ++i) {
+        int kBlock = (i < nS) ? kS : kL;
+        if (kBlock <= 0) continue;
+        flag = this->decoderQR.GetDecodeData( (i < nS) ? cS : cL, kBlock, separatedData[i], DecodeDataAfter + totalDataWords );
+        totalDataWords += kBlock;
     }
 
     // Get Decoded text, only need to send data
     if ( flag )
     {
-        this->decoderQR.UncompressText(DecodeDataAfter, numofTotalWords, this->symbolVersion, DecodedText);
+        this->decoderQR.UncompressText(DecodeDataAfter, totalDataWords, this->symbolVersion, DecodedText);
 //        this->decoderQR.DecodeText(DecodeDataAfter, DecodedText, this->symbolVersion, this->symbolECCLevel);
         delete[] graylevel_augmented;
         delete[] DecodeDataBefore;
