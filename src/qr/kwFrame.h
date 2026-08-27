@@ -1,7 +1,7 @@
 #ifndef KWFRAME_H
 #define KWFRAME_H
 
-#include "main.h"
+#include "kwCommon.h"
 #include "kwImageTool.h"
 #include "kwMsrPoint.h"
 #include "kwPoint.h"

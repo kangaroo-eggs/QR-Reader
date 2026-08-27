@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "kwConst.h"
-#include "main.h"
+#include "kwCommon.h"
 
 class kwPoint;
 class kwPointInt;

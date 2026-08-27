@@ -1,7 +1,7 @@
 #ifndef KWMSRPOINT_H
 #define KWMSRPOINT_H
 
-#include "main.h"
+#include "kwCommon.h"
 #include "kwMatrix.h"
 #include "kwRoi.h"
 #include "kwImage_object.h"

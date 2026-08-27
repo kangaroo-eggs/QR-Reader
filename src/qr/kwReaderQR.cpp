@@ -1,5 +1,5 @@
 #include "kwReaderQR.h"
-#include "main.h"
+#include "kwCommon.h"
 const float cos15 = 0.96592582628;  // cos(15(degree)) = cos(pi/12(radius))
 const float cos45 = 0.70710678118;
 

@@ -1,7 +1,7 @@
 //#ifndef KWTRANSAFFINE_H
 //#define KWTRANSAFFINE_H
 
-//#include <main.h>
+//#include <kwCommon.h>
 //#include <kwMatrix.h>
 
 //class kwTransAffine {

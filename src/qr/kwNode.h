@@ -1,7 +1,7 @@
 #ifndef KWNODE_H
 #define KWNODE_H
 
-#include "main.h"
+#include "kwCommon.h"
 #include "kwConst.h"
 using namespace std;
 
