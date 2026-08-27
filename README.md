@@ -19,9 +19,10 @@ A pure C++ QR code reader & decoder. Builds with CMake + OpenCV — no Qt/qmake 
 
 ```
 QR_project/
-├── CMakeLists.txt        # CMake build (OpenCV auto-detect)
-├── main.cpp              # CLI entry: image file (default) or live camera → gray → kwReaderQR::DoReading
-├── lib/                  # Core reader + decoder sources
+├── CMakeLists.txt        # CMake build (OpenCV auto-detect); static lib qr_lib + exe qr
+├── src/
+│   ├── main.cpp          # CLI entry: image file (default) or live camera → gray → kwReaderQR::DoReading
+│   └── qr/               # Core reader + decoder sources
 ├── test_images/          # Sample QR images (QR/, perspective/, edge/)
 └── result_images/        # Debug output images
 ```

@@ -1,7 +1,7 @@
 //#ifndef KWROI_H
 //#define KWROI_H
 
-//#include <main.h>
+//#include <kwCommon.h>
 //#include <kwImage_object.h>
 //#include <kwPoint.h>
 

@@ -1,7 +1,7 @@
 #ifndef KWIMAGETOOL_H
 #define KWIMAGETOOL_H
 
-#include "main.h"
+#include "kwCommon.h"
 #include "kwMatrix.h"
 #include "kwImage_object.h"
 #include "kwPoint.h"

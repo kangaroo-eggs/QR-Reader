@@ -1,11 +1,10 @@
-#include "main.h"
-
-#include "kwConst.h"
-#include "kwImage_object.h"
-#include "kwReaderQR.h"
+#include "qr/kwConst.h"
+#include "qr/kwImage_object.h"
+#include "qr/kwReaderQR.h"
 
 #include <cstring>
 #include <cstdlib>
+#include <iostream>
 #include <sstream>
 #include <string>
 
